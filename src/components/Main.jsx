@@ -4,6 +4,8 @@ import 'bootstrap/dist/js/bootstrap.min';
 import "./Main.css";
 
 import { useState, useEffect } from "react";
+import Popup from './popup';
+
 import Web3 from "web3";
 import abi from "./new.json";
 require("dotenv").config();
@@ -15,6 +17,7 @@ const SELECTEDNETWORK = "1";
 
 const navigation = () => {
 
+
     const [MetaData, setMetadata] = useState([]);
 
 
@@ -25,6 +28,12 @@ const navigation = () => {
 
     var contractaddress;
     let metaMaskAccount;
+
+    const [isOpen, setIsOpen] = useState(false);
+
+    const togglePopup = () => {
+        setIsOpen(!isOpen);
+    }
 
     let ct;
 
@@ -104,44 +113,43 @@ const navigation = () => {
         // const balanceof = await ct.methods.balanceOf().call();
         const balanceof = await ct.methods.balanceOf(addressArr[0]).call();
 
-        console.log("balanceof",balanceof)
+        console.log("balanceof", balanceof)
 
-        let tokenidArr=[];   
+        let tokenidArr = [];
         let StakedNFTsMetadata = [];
-       
 
-        for (let i=0;i<balanceof;i++)
-        {
-            tokenidArr[i]= await ct.methods.tokensOfOwner(metaMaskAccount).call()
+
+        for (let i = 0; i < balanceof; i++) {
+            tokenidArr[i] = await ct.methods.tokensOfOwner(metaMaskAccount).call()
             // console.log("tokenidArr",tokenidArr[i][i])
 
-            
+
 
             let TokeARRtoNum = Number(tokenidArr[i][i])
 
             let tokenMetadataUri = await ct.methods
-        .tokenURI(TokeARRtoNum)
-        .call();
-        console.log(tokenMetadataUri)
-        if (tokenMetadataUri.startsWith("ipfs")) {
-            tokenMetadataUri =
-              'https://ipfs.io/ipfs/${tokenMetadataUri.split("ipfs://")[1]}';
-          }
-    
-          const ttokenMetadata = await fetch(tokenMetadataUri).then((response) =>
-            response.json()
-          );
-          console.log("ttokenMetadata",ttokenMetadata)
-          StakedNFTsMetadata[i] = ttokenMetadata;
+                .tokenURI(TokeARRtoNum)
+                .call();
+            console.log(tokenMetadataUri)
+            if (tokenMetadataUri.startsWith("ipfs")) {
+                tokenMetadataUri =
+                    'https://ipfs.io/ipfs/${tokenMetadataUri.split("ipfs://")[1]}';
+            }
 
-         
+            const ttokenMetadata = await fetch(tokenMetadataUri).then((response) =>
+                response.json()
+            );
+            console.log("ttokenMetadata", ttokenMetadata)
+            StakedNFTsMetadata[i] = ttokenMetadata;
 
-            
+
+
+
         }
 
         setMetadata(StakedNFTsMetadata)
 
-             let metaObj = await getMetadata(nftArr);
+        let metaObj = await getMetadata(nftArr);
         console.log(metaObj)
         console.log(setNftMetadata(metaObj));
 
@@ -156,25 +164,25 @@ const navigation = () => {
                     <p className="fonts  websitename">Royalty Black Card</p>
                 </div>
             </div>
-            <div className="row row2">
+{/*            <div className="row row2">
                 <div className="col-61 middlediv">
 
                     <div style={{ display: "flex", justifyContent: "center" }}>
                         {MetaData.map((element, index) => {
-                            return (<div style={{  display: "flex", flexDirection: "column", width: "14rem", color: "white" }} key={index}>
+                            return (<div style={{ display: "flex", flexDirection: "column", width: "14rem", color: "white" }} key={index}>
                                 <div>{element.name}</div>
                                 <div style={{ display: "flex", justifyContent: "center" }} >
-                                  
+
                                     <img src={element.image} style={{ height: "8rem", width: "8rem", }}></img>
                                 </div>
                                 {/* <div style={{ color: "white" }}>{element.description}</div> */}
-                            </div>)
+{/*                            </div>)
                         })}
 
                     </div>
 
                 </div>
-            </div>
+                    </div>  */}
             <div className="row row3">
                 <div className="col-62 middlediv">
                     <h4 className="fonts">SELECT THE NFT YOU WOULD LIKE TO EXCHANGE AND CLICK THE EXCHANGE BUTTON BELOW</h4>
@@ -182,16 +190,38 @@ const navigation = () => {
                     <div>
                         {
                             state == 0 ? (<button className="btn" onClick={() => { loadWeb3(); }}>CONNECT</button>)
-                                : state == 1 ? (<button className="btn">Exchange</button>)
+                                : state == 1 ? (<button className="btn" onClick={togglePopup} >VIEW</button>)
                                     : <h5 className='fonts'><b>{errormsg}</b></h5>
                         }
                     </div>
 
                     <h4 className='fonts1' id="wallet">Not Connected</h4>
+
+                    <div >
+                        {isOpen && <Popup
+                            content={<>
+                                <h4 className='fonts2'>Your NFT's</h4>
+                                <div className='ppopup'>
+                                {MetaData.map((element, index) => {
+                                    return (<div key={index}>
+                                        <div >{element.name}</div>
+                                        <div style={{ display: "flex", justifyContent: "center" }} >
+                                            <img src={element.image} style={{ height: "8rem", width: "8rem", }}></img>
+                                        </div>
+                                        
+                                    </div>)
+                                })} </div>
+                                <div><button className="btn1" onClick={() => { loadWeb3(); }}>EXCHANGE</button></div>
+                            </>}
+                            handleClose={togglePopup}
+                        />}
+                    </div>
+
+
                 </div>
             </div>
 
-        </div>
+        </div >
 
 
     );
