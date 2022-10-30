@@ -15,6 +15,9 @@ const SELECTEDNETWORK = "1";
 
 const navigation = () => {
 
+    const [MetaData, setMetadata] = useState([]);
+
+
     const [connectedAccount, setConnectedAccount] = useState("Connect Dapp");
     const [nftMetadata, setNftMetadata] = useState([]); // 
     const [errormsg, setErrorMsg] = useState(false);
@@ -98,10 +101,47 @@ const navigation = () => {
         const totalNumberOfTokens = await ct.methods.totalSupply().call();
         console.log(totalNumberOfTokens);
 
-        nftArr.push(await ct.methods.tokensOfOwner(metaMaskAccount).call());
+        // const balanceof = await ct.methods.balanceOf().call();
+        const balanceof = await ct.methods.balanceOf(addressArr[0]).call();
 
-        console.log(nftArr);
-        let metaObj = await getMetadata(nftArr);
+        console.log("balanceof",balanceof)
+
+        let tokenidArr=[];   
+        let StakedNFTsMetadata = [];
+       
+
+        for (let i=0;i<balanceof;i++)
+        {
+            tokenidArr[i]= await ct.methods.tokensOfOwner(metaMaskAccount).call()
+            // console.log("tokenidArr",tokenidArr[i][i])
+
+            
+
+            let TokeARRtoNum = Number(tokenidArr[i][i])
+
+            let tokenMetadataUri = await ct.methods
+        .tokenURI(TokeARRtoNum)
+        .call();
+        console.log(tokenMetadataUri)
+        if (tokenMetadataUri.startsWith("ipfs")) {
+            tokenMetadataUri =
+              'https://ipfs.io/ipfs/${tokenMetadataUri.split("ipfs://")[1]}';
+          }
+    
+          const ttokenMetadata = await fetch(tokenMetadataUri).then((response) =>
+            response.json()
+          );
+          console.log("ttokenMetadata",ttokenMetadata)
+          StakedNFTsMetadata[i] = ttokenMetadata;
+
+         
+
+            
+        }
+
+        setMetadata(StakedNFTsMetadata)
+
+             let metaObj = await getMetadata(nftArr);
         console.log(metaObj)
         console.log(setNftMetadata(metaObj));
 
@@ -120,13 +160,14 @@ const navigation = () => {
                 <div className="col-61 middlediv">
 
                     <div style={{ display: "flex", justifyContent: "center" }}>
-                        {nftMetadata.map((element, index) => {
-                            return (<div style={{ border: "1px solid white", display: "flex", flexDirection: "column", width: "14rem", color: "white" }} key={index}>
+                        {MetaData.map((element, index) => {
+                            return (<div style={{  display: "flex", flexDirection: "column", width: "14rem", color: "white" }} key={index}>
                                 <div>{element.name}</div>
                                 <div style={{ display: "flex", justifyContent: "center" }} >
+                                  
                                     <img src={element.image} style={{ height: "8rem", width: "8rem", }}></img>
                                 </div>
-                                <div style={{ color: "white" }}>{element.description}</div>
+                                {/* <div style={{ color: "white" }}>{element.description}</div> */}
                             </div>)
                         })}
 
