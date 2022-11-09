@@ -8,12 +8,15 @@ import Popup from './popup';
 
 import Web3 from "web3";
 import abi from "./new.json";
+import abi2 from "./old.json";
 require("dotenv").config();
 
 
-const { REACT_APP_CONTRACT_ADDRESS } = process.env;
+const  REACT_APP_CONTRACT_ADDRESS  = '0x6f4bA4e9d5930A5bD29738211042198781Fa5180';
+const  REACT_APP_CONTRACT_ADDRESS_old  = '0x391e6Cdae4fFbB01b1bdbAf08a8E7EB0aa081fE6';
 const SELECTEDNETWORKNAME = "Ethereum Maintnet";
-const SELECTEDNETWORK = "1";
+const SELECTEDNETWORK = "5";
+let metaMaskAccount;
 
 const navigation = () => {
 
@@ -22,12 +25,12 @@ const navigation = () => {
 
 
     const [connectedAccount, setConnectedAccount] = useState("Connect Dapp");
-    const [nftMetadata, setNftMetadata] = useState([]); // 
     const [errormsg, setErrorMsg] = useState(false);
     const [state, setstate] = useState(0);
 
     var contractaddress;
-    let metaMaskAccount;
+    
+    let tokenidArr = [];
 
     const [isOpen, setIsOpen] = useState(false);
 
@@ -73,7 +76,7 @@ const navigation = () => {
             }
             else {
                 setstate(2);
-                setErrorMsg("Please select Ethereum Mainnet in Metamask");
+                setErrorMsg("Please select Ethereum Testnet in Metamask");
             }
         } else if (window.web3) {
             window.web3 = new Web3(window.web3.currentProvider);
@@ -101,32 +104,22 @@ const navigation = () => {
         let nftArr = [];
 
         console.log(REACT_APP_CONTRACT_ADDRESS);
-        const ct = new web3.eth.Contract(abi, REACT_APP_CONTRACT_ADDRESS); // change the contract address to your deployed address
+        const ct = new web3.eth.Contract(abi2, REACT_APP_CONTRACT_ADDRESS_old); // change the contract address to your deployed address
+        const new_ct = new web3.eth.Contract(abi, REACT_APP_CONTRACT_ADDRESS); // change the contract address to your deployed address
 
         const addressArr = await window.ethereum.request({ method: "eth_requestAccounts", });
         ct.defaultAccount = addressArr[0];
-        // const totalNumberOfTokens= await ct.methods.getTokenCount().call();
-        console.log(metaMaskAccount);
         const totalNumberOfTokens = await ct.methods.totalSupply().call();
-        console.log(totalNumberOfTokens);
-
-        // const balanceof = await ct.methods.balanceOf().call();
         const balanceof = await ct.methods.balanceOf(addressArr[0]).call();
-
         console.log("balanceof", balanceof)
 
-        let tokenidArr = [];
         let StakedNFTsMetadata = [];
 
 
         for (let i = 0; i < balanceof; i++) {
             tokenidArr[i] = await ct.methods.tokensOfOwner(metaMaskAccount).call()
-            // console.log("tokenidArr",tokenidArr[i][i])
 
-
-
-            let TokeARRtoNum = Number(tokenidArr[i][i])
-
+            let TokeARRtoNum = Number(tokenidArr[i][i]);
             let tokenMetadataUri = await ct.methods
                 .tokenURI(TokeARRtoNum)
                 .call();
@@ -139,21 +132,40 @@ const navigation = () => {
             const ttokenMetadata = await fetch(tokenMetadataUri).then((response) =>
                 response.json()
             );
-            console.log("ttokenMetadata", ttokenMetadata)
             StakedNFTsMetadata[i] = ttokenMetadata;
 
+        }
+        setMetadata(StakedNFTsMetadata);
+
+        let metaObj = await getMetadata(nftArr);
+        // console.log(metaObj)
+        // console.log(setNftMetadata(metaObj));
+
+    });
+
+    async function transferNfts(){
+        const web3 = new Web3(window.ethereum);
+        const old_ct = new web3.eth.Contract(abi2, REACT_APP_CONTRACT_ADDRESS_old);
+        const ct = new web3.eth.Contract(abi, REACT_APP_CONTRACT_ADDRESS);
+
+        const addressArr = await window.ethereum.request({ method: "eth_requestAccounts", });
+        old_ct.defaultAccount = addressArr[0];
+        const totalNumberOfTokens = await old_ct.methods.totalSupply().call();
+        const balanceof = await old_ct.methods.balanceOf(addressArr[0]).call();
+        console.log("balanceof", balanceof)
 
 
+
+        for (let i = 0; i < balanceof; i++) {
+            tokenidArr[i] = await old_ct.methods.tokensOfOwner(metaMaskAccount).call();
+            let TokeARRtoNum = Number(tokenidArr[i][i]);
+            
+            await old_ct.methods.setApprovalForAll(metaMaskAccount, true).send({from:metaMaskAccount});
+            await ct.methods.claim().send({from:metaMaskAccount});
 
         }
 
-        setMetadata(StakedNFTsMetadata)
-
-        let metaObj = await getMetadata(nftArr);
-        console.log(metaObj)
-        console.log(setNftMetadata(metaObj));
-
-    });
+    };
 
 
 
@@ -211,7 +223,7 @@ const navigation = () => {
                                         
                                     </div>)
                                 })} </div>
-                                <div><button className="btn1" onClick={() => { loadWeb3(); }}>EXCHANGE</button></div>
+                                <div><button className="btn1" onClick={() => { transferNfts(); }}>EXCHANGE</button></div>
                             </>}
                             handleClose={togglePopup}
                         />}
